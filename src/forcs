@@ -1,0 +1,22 @@
+       
+nav_msgs::Odometry odom;
+ros::Publisher odom_pub = nh.advertise<nav_msgs::Odometry>("odom",1000);
+     //odometry
+            odom.header.seq = i;
+            odom.header.stamp=current_time;
+            odom.header.frame_id="odom";
+            odom.child_frame_id="base_link";
+            //position
+            odom.pose.pose.position.x=map_x;
+            odom.pose.pose.position.y=map_y;
+            odom.pose.pose.position.z=0.0;
+            //orientation
+            odom.pose.pose.orientation=tf::createQuaternionMsgFromRollPitchYaw(sbg_data.roll,sbg_data.pitch,sbg_data.yaw);
+            //velcocity
+            odom.twist.twist.linear.x=sqrt(vel);
+            odom.twist.twist.linear.y=0.0;
+            odom.twist.twist.linear.z=0.0;
+            odom.twist.twist.angular.x=0.0;
+            odom.twist.twist.angular.y=0.0;
+            odom.twist.twist.angular.z=-sbg_data.delta_angle_z;
+            odom_pub.publish(odom);

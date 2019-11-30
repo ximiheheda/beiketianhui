@@ -1,0 +1,8 @@
+<launch>
+
+  <node pkg="ugvc_navigation" type="tf_laser" name="tf_laser" output="screen"/>
+  <node pkg="ugvc_navigation" type="test_odom" name="test_odom" output="screen"/>
+  <node pkg="ugvc_navigation" type="build_3D_map_pub" name="build_3D_map_pub" output="screen"/>
+  <node pkg="ugvc_navigation" type="convert2image" name="convert2image" output="screen"/>
+
+</launch>

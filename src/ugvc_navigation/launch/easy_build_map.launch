@@ -1,0 +1,7 @@
+<launch>
+
+  <node pkg="ugvc_navigation" type="tf_laser" name="tf_laser" output="screen"/>
+  <node pkg="ugvc_navigation" type="easy_build_map" name="easy_build_map" args="$(find ugvc_environment)/worlds/target.txt" output="screen"/>
+  
+
+</launch>
