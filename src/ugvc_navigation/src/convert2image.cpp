@@ -111,7 +111,7 @@ tf::TransformListener plistener;
 
     void front_cloud_cb (const ugvc_navigation::mymap::ConstPtr& map_data3) 
 	{
-        front_cell_map.header.frame_id="odom";t
+        front_cell_map.header.frame_id="odom";
         front_cell_map.header.stamp = ros::Time::now();
         front_cell_map.cell_height=0.2;
         front_cell_map.cell_width=0.2;
