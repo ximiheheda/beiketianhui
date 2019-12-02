@@ -248,11 +248,14 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
   size_t break_count;
   size_t break_start_index;
   size_t break_stop_index;
-
+  size_t window_vv_value[globalMapHeight]={0};
+  size_t window_vv_num[globalMapHeight]={0};
+  size_t window_average_uu = 0;
+  size_t window_average_vv = 0;
   for(size_t ww_temp=0; ww_temp<globalMapHeight; ww_temp++)
   {
     break_start_index = 0; 
-    for(size_t vv_temp=0; vv_temp<globalMapLongth-9; vv_temp++) //vv_temp设置为了防止数组越界
+    for(size_t vv_temp=0; vv_temp<globalMapLongth-10; vv_temp++) //vv_temp设置为了防止数组越界
     {
       size_t left_obstacle_count = 0;
       size_t right_obstacle_count = 0;
@@ -262,9 +265,9 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
         if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+1)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&      // 该障碍的右边为空,且长度为5以上，且右边第7~8个有障碍
         obstacle_front_map.maparry[uu_wall_start+(vv_temp+2)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
         obstacle_front_map.maparry[uu_wall_start+(vv_temp+6)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
-        obstacle_front_map.maparry[uu_wall_start+(vv_temp+8)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 &&
         obstacle_front_map.maparry[uu_wall_start+(vv_temp+9)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 &&
-        obstacle_front_map.maparry[uu_wall_start+(vv_temp+10)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) 
+        obstacle_front_map.maparry[uu_wall_start+(vv_temp+10)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 &&
+        obstacle_front_map.maparry[uu_wall_start+(vv_temp+11)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) 
         {
             break_start_index = vv_temp+1;
 
@@ -278,6 +281,11 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
             {
               break_stop_index = vv_temp+7;
             }
+            else if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+8)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
+            obstacle_front_map.maparry[uu_wall_start+(vv_temp+9)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为7
+            {
+              break_stop_index = vv_temp+8;
+            }
             for(size_t temp_left=1; break_start_index-temp_left>=0; temp_left++)
             {
               if(obstacle_front_map.maparry[uu_wall_start+(break_start_index-temp_left)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1)
@@ -286,15 +294,15 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
                 break;
 
             }
-            for(size_t temp_left=1; break_start_index-temp_left>=0; temp_left++)
+            for(size_t temp_right=break_start_index; temp_right<=globalMapLongth; temp_right++)
             {
-              if(obstacle_front_map.maparry[uu_wall_start+(break_stop_index+temp_left)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1)
+              if(obstacle_front_map.maparry[uu_wall_start+(break_stop_index+temp_right)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1)
                 right_obstacle_count++;
                 else
                 break;
 
             }
-            if(left_obstacle_count>=10||right_obstacle_count>=0)
+            if(left_obstacle_count>=10||right_obstacle_count>=10)
             {            
               break_start_index = vv_temp+1;
               ROS_INFO("Find window!");
@@ -309,8 +317,7 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 
 
       //计算窗口的中心位置
-      size_t window_average_uu = 0;
-      size_t window_average_vv = 0;
+
       if(break_start_index!=0)
       {
         if(vv_temp >= break_start_index && vv_temp <= break_start_index+6)
@@ -322,7 +329,39 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 
       }
 
+
+    }//扫描完一行
+    //统计红色横的中点的位置,位置id在window_vv_value[]中,每个id的个数在对应的window_vv_num
+    size_t temp_window_vv_value=(break_start_index+break_stop_index)/2;
+    size_t temp_v=0;
+    for(temp_v;window_vv_value[temp_v]!=0;temp_v++)
+    {
+      if(temp_window_vv_value==window_vv_value[temp_v])
+      {
+        window_vv_num[temp_v]++;
+        break;
+      }
     }
+    if(window_vv_value[temp_v]==0)
+    {
+      window_vv_num[temp_v]=temp_window_vv_value;
+      window_vv_num[temp_v]=1;
+    }
+    //去window_vv_num最大的作为窗位置
+    size_t max_id=0;
+    size_t max_value=0;
+    for(size_t i=0;i<16;i++)
+    {
+      if(window_vv_num[i]>max_value)
+      {
+        max_value=window_vv_num[i];
+        max_id=i;
+      }
+        
+    }
+    window_average_vv=window_vv_value[max_id];
+
+      
   }
 
   
