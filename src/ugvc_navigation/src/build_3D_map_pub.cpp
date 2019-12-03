@@ -369,7 +369,7 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
     }
       
   }
-  if(window_vv_num[max_id]>0)
+  if(window_vv_num[max_id]>2)
   {
      window_average_vv=window_vv_value[max_id];
     ROS_WARN("window_average_vv %d",int(window_average_vv));
