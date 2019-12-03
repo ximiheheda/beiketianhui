@@ -264,27 +264,35 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
       {
         if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+1)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&      // 该障碍的右边为空,且长度为5以上，且右边第7~8个有障碍
         obstacle_front_map.maparry[uu_wall_start+(vv_temp+2)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
-        obstacle_front_map.maparry[uu_wall_start+(vv_temp+6)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
+        obstacle_front_map.maparry[uu_wall_start+(vv_temp+5)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
         obstacle_front_map.maparry[uu_wall_start+(vv_temp+9)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 &&
         obstacle_front_map.maparry[uu_wall_start+(vv_temp+10)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 &&
         obstacle_front_map.maparry[uu_wall_start+(vv_temp+11)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) 
         {
             break_start_index = vv_temp+1;
-
-            if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+6)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
+            if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+5)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
+            obstacle_front_map.maparry[uu_wall_start+(vv_temp+6)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为6
+            {
+              ROS_INFO("break 5");
+              break_stop_index = vv_temp+5;
+            }
+            else if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+6)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
             obstacle_front_map.maparry[uu_wall_start+(vv_temp+7)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为6
             {
               break_stop_index = vv_temp+6;
+              ROS_INFO("break 6");
             }
             else if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+7)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
             obstacle_front_map.maparry[uu_wall_start+(vv_temp+8)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为7
             {
               break_stop_index = vv_temp+7;
+              ROS_INFO("break 7");
             }
             else if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+8)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
             obstacle_front_map.maparry[uu_wall_start+(vv_temp+9)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为7
             {
               break_stop_index = vv_temp+8;
+              ROS_INFO("break 8");
             }
             for(size_t temp_left=1; break_start_index-temp_left>=0; temp_left++)
             {
@@ -294,14 +302,16 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
                 break;
 
             }
-            for(size_t temp_right=break_start_index; temp_right<=globalMapLongth; temp_right++)
-            {
-              if(obstacle_front_map.maparry[uu_wall_start+(break_stop_index+temp_right)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1)
-                right_obstacle_count++;
-                else
-                break;
+            if(break_stop_index>0)
+              for(size_t temp_right=break_stop_index+1; temp_right<=globalMapLongth; temp_right++)
+              {
+                if(obstacle_front_map.maparry[uu_wall_start+temp_right*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1)
+                  right_obstacle_count++;
+                  else
+                  break;
 
-            }
+              }
+              ROS_INFO("right_obstacle_count %d",int(right_obstacle_count));
             if(left_obstacle_count>=10||right_obstacle_count>=10)
             {            
               break_start_index = vv_temp+1;
@@ -309,10 +319,10 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
             }
             else
             break_start_index = 0;
-
+        }
 
           
-        }
+
       }
 
 
@@ -322,46 +332,47 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
       {
         if(vv_temp >= break_start_index && vv_temp <= break_start_index+6)
           window_front_map.maparry[uu_wall_start+vv_temp*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] = 1;
-
-
-
-
+          //统计红色横的中点的位置,位置id在window_vv_value[]中,每个id的个数在对应的window_vv_num
+          size_t temp_window_vv_value=(break_start_index+break_stop_index)/2;
+          size_t temp_v=0;
+          for(temp_v;window_vv_value[temp_v]!=0;temp_v++)
+          {
+            if(temp_window_vv_value==window_vv_value[temp_v])
+            {
+              window_vv_num[temp_v]++;
+              break;
+            }
+          }
+          if(window_vv_value[temp_v]==0)
+          {
+            window_vv_value[temp_v]=temp_window_vv_value;
+            window_vv_num[temp_v]=1;
+          } 
 
       }
 
 
     }//扫描完一行
-    //统计红色横的中点的位置,位置id在window_vv_value[]中,每个id的个数在对应的window_vv_num
-    size_t temp_window_vv_value=(break_start_index+break_stop_index)/2;
-    size_t temp_v=0;
-    for(temp_v;window_vv_value[temp_v]!=0;temp_v++)
-    {
-      if(temp_window_vv_value==window_vv_value[temp_v])
-      {
-        window_vv_num[temp_v]++;
-        break;
-      }
-    }
-    if(window_vv_value[temp_v]==0)
-    {
-      window_vv_num[temp_v]=temp_window_vv_value;
-      window_vv_num[temp_v]=1;
-    }
-    //去window_vv_num最大的作为窗位置
-    size_t max_id=0;
-    size_t max_value=0;
-    for(size_t i=0;i<16;i++)
-    {
-      if(window_vv_num[i]>max_value)
-      {
-        max_value=window_vv_num[i];
-        max_id=i;
-      }
-        
-    }
-    window_average_vv=window_vv_value[max_id];
-
+   
       
+  }//扫描完一个墙
+
+  //去window_vv_num最大的作为窗位置
+  size_t max_id=0;
+  size_t max_value=0;
+  for(size_t i=0;i<16;i++)
+  {
+    if(window_vv_num[i]>max_value)
+    {
+      max_value=window_vv_num[i];
+      max_id=i;
+    }
+      
+  }
+  if(window_vv_num[max_id]>0)
+  {
+     window_average_vv=window_vv_value[max_id];
+    ROS_WARN("window_average_vv %d",int(window_average_vv));
   }
 
   
