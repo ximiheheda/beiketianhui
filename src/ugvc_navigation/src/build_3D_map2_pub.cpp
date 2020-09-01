@@ -72,7 +72,6 @@ build_3D_map::build_3D_map()
 void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input) 
 {
   // C0-update
-  ROS_INFO("22222222222222222222222");
   tf::StampedTransform transform;
   try{
     //  ROS_INFO("SSS");
@@ -143,8 +142,7 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
       // ROS_INFO("vv=%d,uu=%d,ww=%d",vv,uu,ww);
       // 按照x的方向开始横向扫描，扫满以后再向y方向前进一格，扫满整个平面以后，再向z方向上升一格
 
-      lvbo[uu_map+vv_map*globalMapWidth+ww_map*globalMapLongth*globalMapLongth]=
-                lvbo[uu_map+vv_map*globalMapWidth+ww_map*globalMapLongth*globalMapLongth]+50;
+      lvbo[uu_map+vv_map*globalMapWidth+ww_map*globalMapLongth*globalMapLongth]=lvbo[uu_map+vv_map*globalMapWidth+ww_map*globalMapLongth*globalMapLongth]+50;
       // 减去部分没有加
       if(lvbo[uu_map+vv_map*globalMapWidth+ww_map*globalMapLongth*globalMapLongth]>=100)
       {
@@ -196,15 +194,17 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
   
   //采取无人机的前进方向为y方向，计算y方向，即uu值而言，跟无人机距离最近的障碍，并进行累计求和（x方向），若超过10则认为是一面墙
   //先从和无人机前方的uu开始积分
-  for(i=uu_uav;i<globalMapWidth;i++)
+  for(i=uu_uav;i<uu_uav+30;i++)//只扫描前方三米
   {
-
     for(size_t j=0;j<globalMapLongth;j++)
     { 
-      //从y方向来看，正负不超过2即可   
-      if(mazemap.maparry[i+j*globalMapWidth+ww_uav*globalMapLongth*globalMapLongth] == 1)
-      {
-        num_obstacle++;
+      //从y方向来看，正负不超过2即可 
+      for(size_t k=0; k<globalMapHeight; k++)  
+      {      
+        if(mazemap.maparry[i+j*globalMapWidth+k*globalMapLongth*globalMapLongth] == 1)
+        {
+          num_obstacle++;
+        }
       }
     }
 
@@ -237,7 +237,7 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
       if(mazemap.maparry[(uu_wall_start-4)+j*globalMapWidth+ww_uav*globalMapLongth*globalMapLongth] == 1)
       {
         if(uu_wall_min <= uu_wall_start - 4) uu_wall_min = uu_wall_start-4;
-      }
+      }      
   }
   //ROS_INFO("test0");
   for(size_t ww_temp = 0; ww_temp<globalMapHeight; ww_temp++)
@@ -247,12 +247,12 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
       if(mazemap.maparry[uu_wall_start+j*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 ||
       mazemap.maparry[(uu_wall_start+1)+j*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 ||
       mazemap.maparry[(uu_wall_start+2)+j*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 ||
-      mazemap.maparry[(uu_wall_start+3)+j*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 ||      
-      mazemap.maparry[(uu_wall_start+4)+j*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 ||
+      mazemap.maparry[(uu_wall_start+3)+j*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 ||
+      mazemap.maparry[(uu_wall_start+4)+j*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 ||      
       mazemap.maparry[(uu_wall_start-1)+j*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 ||
-      mazemap.maparry[(uu_wall_start-2)+j*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 || 
+      mazemap.maparry[(uu_wall_start-2)+j*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 ||
       mazemap.maparry[(uu_wall_start-3)+j*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 ||
-      mazemap.maparry[(uu_wall_start-4)+j*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1         
+      mazemap.maparry[(uu_wall_start-4)+j*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1   
       )
       {
           obstacle_front_map.maparry[uu_wall_start+j*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] = 1;
@@ -283,86 +283,51 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 
       if(obstacle_front_map.maparry[uu_wall_start+vv_temp*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //找到当前的障碍
       {
-        if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+1)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&      // 该障碍的右边为空,且长度为5以上，且右边第7~8个有障碍
+        if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+1)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 &&      // 该障碍的右边为空,且长度为5以上，且右边第7~8个有障碍
         obstacle_front_map.maparry[uu_wall_start+(vv_temp+2)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
-        obstacle_front_map.maparry[uu_wall_start+(vv_temp+11)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
-        obstacle_front_map.maparry[uu_wall_start+(vv_temp+18)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 &&
-        obstacle_front_map.maparry[uu_wall_start+(vv_temp+19)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 &&
-        obstacle_front_map.maparry[uu_wall_start+(vv_temp+20)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) 
+        obstacle_front_map.maparry[uu_wall_start+(vv_temp+10)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
+        obstacle_front_map.maparry[uu_wall_start+(vv_temp+14)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 ||
+        obstacle_front_map.maparry[uu_wall_start+(vv_temp+15)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 ||
+        obstacle_front_map.maparry[uu_wall_start+(vv_temp+16)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 ||
+        obstacle_front_map.maparry[uu_wall_start+(vv_temp+17)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1 ||
+        obstacle_front_map.maparry[uu_wall_start+(vv_temp+18)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1              
+        )
         {
             break_start_index = vv_temp+1;
-            if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+12)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
-            obstacle_front_map.maparry[uu_wall_start+(vv_temp+13)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为6
-            {
-              ROS_INFO("break 14");
-              break_stop_index = vv_temp+12;
-            }
-            else if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+13)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
+
+            if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+13)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
             obstacle_front_map.maparry[uu_wall_start+(vv_temp+14)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为6
             {
               break_stop_index = vv_temp+13;
-              ROS_INFO("break 15");
-            }            
+              ROS_INFO("break 13");
+            }
             else if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+14)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
-            obstacle_front_map.maparry[uu_wall_start+(vv_temp+15)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为6
+            obstacle_front_map.maparry[uu_wall_start+(vv_temp+15)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为7
             {
-              ROS_INFO("break 14");
               break_stop_index = vv_temp+14;
+              ROS_INFO("break 14");
             }
             else if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+15)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
-            obstacle_front_map.maparry[uu_wall_start+(vv_temp+16)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为6
+            obstacle_front_map.maparry[uu_wall_start+(vv_temp+16)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为7
             {
               break_stop_index = vv_temp+15;
               ROS_INFO("break 15");
-            }
+            }   
             else if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+16)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
             obstacle_front_map.maparry[uu_wall_start+(vv_temp+17)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为7
             {
               break_stop_index = vv_temp+16;
               ROS_INFO("break 16");
-            }
+            }   
             else if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+17)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
-            obstacle_front_map.maparry[uu_wall_start+(vv_temp+18)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为7
+            obstacle_front_map.maparry[uu_wall_start+(vv_temp+18)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为6
             {
-              break_stop_index = vv_temp+17;
               ROS_INFO("break 17");
-            }            
-            else if(obstacle_front_map.maparry[uu_wall_start+(vv_temp+18)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 0 &&
-            obstacle_front_map.maparry[uu_wall_start+(vv_temp+19)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1) //假设窗户宽度为7
-            {
-              break_stop_index = vv_temp+18;
-              ROS_INFO("break 18");
-            }
-            for(size_t temp_left=1; break_start_index-temp_left>=0; temp_left++)
-            {
-              if(obstacle_front_map.maparry[uu_wall_start+(break_start_index-temp_left)*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1)
-                left_obstacle_count++;
-                else
-                break;
-
-            }
-            if(break_stop_index>0)
-              for(size_t temp_right=break_stop_index+1; temp_right<globalMapLongth; temp_right++)
-              {
-                if(obstacle_front_map.maparry[uu_wall_start+temp_right*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] == 1)
-                  right_obstacle_count++;
-                  else
-                  break;
-
-              }
-              ROS_INFO("right_obstacle_count %d",int(right_obstacle_count));
-            if(left_obstacle_count>=10||right_obstacle_count>=10)
-            {            
-              break_start_index = vv_temp+1;
-              ROS_INFO("Find window!");
-            }
+              break_stop_index = vv_temp+17;
+            }                    
             else
               break_start_index = 0;
-            //ROS_INFO("test6");
-        }
-
-          
-
+        }       
       }
 
 
@@ -373,27 +338,24 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
         //ROS_INFO("test2");
         if(vv_temp >= break_start_index && vv_temp <= break_stop_index)
           window_front_map.maparry[uu_wall_start+vv_temp*globalMapWidth+ww_temp*globalMapLongth*globalMapLongth] = 1;
+
           //统计红色横的中点的位置,位置id在window_vv_value[]中,每个id的个数在对应的window_vv_num
           size_t temp_window_vv_value=(break_start_index+break_stop_index)/2;
           size_t temp_v=0;
-          //ROS_INFO("test3");
           for(temp_v;window_vv_value[temp_v]!=0;temp_v++)
-          {//ROS_INFO("test4");
+          {
             if(temp_window_vv_value==window_vv_value[temp_v])
             {
               window_vv_num[temp_v]++;
               break;
             }
           }
-          //ROS_INFO("test5");
           if(window_vv_value[temp_v]==0)
           {
             window_vv_value[temp_v]=temp_window_vv_value;
             window_vv_num[temp_v]=1;
           } 
-
       }
-
 
     }//扫描完一行
    
@@ -474,9 +436,9 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
     obstacle_front_map.maparry[uu_wall_min+(vv_uav-3)*globalMapWidth+ww_uav*globalMapLongth*globalMapLongth]==0 &&
     obstacle_front_map.maparry[uu_wall_min+(vv_uav+3)*globalMapWidth+ww_uav*globalMapLongth*globalMapLongth]==0 &&
     obstacle_front_map.maparry[uu_wall_min+(vv_uav-4)*globalMapWidth+ww_uav*globalMapLongth*globalMapLongth]==0 && 
-    obstacle_front_map.maparry[uu_wall_min+(vv_uav+4)*globalMapWidth+ww_uav*globalMapLongth*globalMapLongth]==0 &&
-    obstacle_front_map.maparry[uu_wall_min+vv_uav*globalMapWidth+(ww_uav+2)*globalMapLongth*globalMapLongth]==0 &&
-    obstacle_front_map.maparry[uu_wall_min+vv_uav*globalMapWidth+(ww_uav-3)*globalMapLongth*globalMapLongth]==0 
+    obstacle_front_map.maparry[uu_wall_min+(vv_uav+4)*globalMapWidth+ww_uav*globalMapLongth*globalMapLongth]==0 &&    
+    obstacle_front_map.maparry[uu_wall_min+vv_uav*globalMapWidth+(ww_uav+2)*globalMapLongth*globalMapLongth]==0 && 
+    obstacle_front_map.maparry[uu_wall_min+vv_uav*globalMapWidth+(ww_uav-3)*globalMapLongth*globalMapLongth]==0
   )
   {
     flight_command_msg.safe=true;
@@ -505,7 +467,7 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
       obstacle_front_map.maparry[uu_wall_min+(vv_uav-2)*globalMapWidth+(ww_uav-1)*globalMapLongth*globalMapLongth] && 
       obstacle_front_map.maparry[uu_wall_min+(vv_uav+2)*globalMapWidth+(ww_uav-1)*globalMapLongth*globalMapLongth] 
       )
-      action_command_msgs.data=UP;
+      action_command_msgs.data=DOWN;
     else if(obstacle_front_map.maparry[uu_wall_min+(vv_uav-1)*globalMapWidth+(ww_uav+1)*globalMapLongth*globalMapLongth] &&
       obstacle_front_map.maparry[uu_wall_min+(vv_uav+1)*globalMapWidth+(ww_uav+1)*globalMapLongth*globalMapLongth] &&
       obstacle_front_map.maparry[uu_wall_min+(vv_uav-2)*globalMapWidth+(ww_uav+1)*globalMapLongth*globalMapLongth] && 
@@ -515,7 +477,7 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
       obstacle_front_map.maparry[uu_wall_min+(vv_uav-2)*globalMapWidth+(ww_uav-1)*globalMapLongth*globalMapLongth] ==0 && 
       obstacle_front_map.maparry[uu_wall_min+(vv_uav+2)*globalMapWidth+(ww_uav-1)*globalMapLongth*globalMapLongth] ==0
     )
-      action_command_msgs.data=DOWN;
+      action_command_msgs.data=UP;
 
     else if(!flight_command_msg.front_wall_reach && !flight_command_msg.front_wall_too_near)
       action_command_msgs.data=FORWARD;
@@ -523,13 +485,14 @@ void build_3D_map::cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
     {
       if(flight_command_msg.window_is_left) 
         action_command_msgs.data=LEFT;
-      else if(flight_command_msg.window_is_right)
+      if(flight_command_msg.window_is_right)
         action_command_msgs.data=RIGHT;
       else 
         action_command_msgs.data=STAY;
     }
     else if(flight_command_msg.front_wall_too_near)
       action_command_msgs.data=BACK;
+
   }
   action_command_pub.publish(action_command_msgs);
 
@@ -608,7 +571,7 @@ void build_3D_map::uav_loc_cb(const nav_msgs::Odometry::ConstPtr& uav_locat_msg)
 int main(int argc, char *argv[])
 {
 	
-	ros::init(argc, argv, "build_3D_map");
+	ros::init(argc, argv, "build_3D_map2");
   for(size_t i=0;i<160000;i++)
   {  
     mazemap.maparry[i]=0;
